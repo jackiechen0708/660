@@ -1,0 +1,59 @@
+# -*- coding: utf-8 -*-
+import os
+import cv2
+import re
+png_file_size = int(input("please input png file max size:"))
+png_height = int(input("Please input png file max height"))
+png_width = int(input("Please input png file max width"))
+#png_file_size = 200 
+#png_height = 1024
+#png_width = 1024 
+with open("log.txt",'w') as fp:
+    for parent,d,f in os.walk('.'):
+        if len(f) > 0:
+            # 1.general name rule
+            counter = {}
+            for filename_ in f:
+                # 1.1 check name character
+                try:
+                    filename,postfix = filename_.split(".")
+                except:
+                    filename = filename
+                    postfix = None
+                if postfix == "meta":
+				    continue
+				if re.match('^[a-z0-9_]*$',filename):
+                    if filename not in counter:
+                        counter[filename] = 0
+                    counter[filename] += 1
+
+                    # 2 check tga postfix
+                    if postfix == 'tga':
+                        if not filename.endswith('_all'):
+                            fp.write( "tga 文件缺少后缀 , " + filename +" , "+ os.path.join(parent,filename_) + "\n")
+                    if postfix == 'png':
+                        # 3.1 check png file size
+                        cur_size = os.path.getsize(os.path.join(parent,filename_))/1024
+                        if cur_size > png_file_size:
+                            fp.write( "png 文件大小不符 , " + filename +" , "+ os.path.join(parent,filename_) + "\n")
+                        # 3.3 check png shape
+                        width,height,_ = cv2.imread(os.path.join(parent,filename_)).shape
+                        if width > png_width or height > png_height:
+                            fp.write( "贴图尺寸不符 , " + filename +" , "+ os.path.join(parent,filename_) + "\n")
+                    # 3.2 features check
+                    if parent.endswith('features'):
+                        if postfix == 'png' or postfix == 'tga':
+                            pass
+                        else:
+                            fp.write( "贴图文件格式不符 , " + filename +" , "+ os.path.join(parent,filename_) + "\n")
+
+                else:
+                    fp.write( "文件名不规范 , " + filename +" , "+ os.path.join(parent,filename_) + "\n")
+            # 1.2 check duplicate
+            for filename,num in counter.items():
+                if num > 1:
+                    for i in f:
+                        if filename in i:
+                            fp.write( "文件名重复 , " + filename +" , "+ os.path.join(parent,i) + "\n")
+
+                    
